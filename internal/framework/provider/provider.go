@@ -21,6 +21,7 @@ import (
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/framework/service/dlp_datasets"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/framework/service/email_routing_address"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/framework/service/email_routing_rule"
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/framework/service/gateway_app_types"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/framework/service/gateway_categories"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/framework/service/hyperdrive_config"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/framework/service/list_item"
@@ -30,7 +31,10 @@ import (
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/framework/service/rulesets"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/framework/service/turnstile"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/framework/service/user"
-	"github.com/cloudflare/terraform-provider-cloudflare/internal/framework/service/workers_for_platforms"
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/framework/service/workers_for_platforms_dispatch_namespace"
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/framework/service/workers_for_platforms_dispatch_namespace_deprecated"
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/framework/service/zero_trust_access_mtls_hostname_settings"
+	"github.com/cloudflare/terraform-provider-cloudflare/internal/framework/service/zero_trust_risk_behavior"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/sdkv2provider"
 	"github.com/cloudflare/terraform-provider-cloudflare/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -365,10 +369,13 @@ func (p *CloudflareProvider) Resources(ctx context.Context) []func() resource.Re
 		list_item.NewResource,
 		r2_bucket.NewResource,
 		risk_behavior.NewResource,
+		zero_trust_risk_behavior.NewResource,
 		rulesets.NewResource,
 		turnstile.NewResource,
 		access_mutual_tls_hostname_settings.NewResource,
-		workers_for_platforms.NewResource,
+		zero_trust_access_mtls_hostname_settings.NewResource,
+		workers_for_platforms_dispatch_namespace_deprecated.NewResource,
+		workers_for_platforms_dispatch_namespace.NewResource,
 	}
 }
 
@@ -379,6 +386,7 @@ func (p *CloudflareProvider) DataSources(ctx context.Context) []func() datasourc
 		user.NewDataSource,
 		dlp_datasets.NewDataSource,
 		gateway_categories.NewDataSource,
+		gateway_app_types.NewDataSource,
 	}
 }
 
