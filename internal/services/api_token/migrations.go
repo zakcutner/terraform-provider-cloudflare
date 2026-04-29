@@ -23,24 +23,28 @@ var _ resource.ResourceWithUpgradeState = (*APITokenResource)(nil)
 //
 // This handles three upgrade paths:
 //
-// 1. v0 state (schema_version=0) → v501: Full transformation via v500
+// 1. v0 state (schema_version=0) → v501: Full transformation from v4 SDKv2
 //   - Converts policy[] block to policies[] attribute
 //   - Converts permission_groups from strings to objects
 //   - Converts resources from map to JSON string
 //   - Converts condition/request_ip from arrays to single nested
 //
-// 2. v1 state (schema_version=1) → v501: Deserialize/re-serialize via v500
-//   - Converts Set-typed state to List-compatible state
+// 2. v1 state (schema_version=1) → v501: Set→List migration
+//   - v5.16-v5.18 stored state at schema_version=1 with Set-based policies/permission_groups
+//   - This is structurally identical to v500 state (same Set-based schema)
+//   - Reuses the v500 Set-based schema for deserialization and UpgradeFromV500 for sorting
 //
 // 3. v500 state (schema_version=500) → v501: Set→List migration
 //   - Converts Set-typed policies and permission_groups to sorted Lists
 func (r *APITokenResource) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
 	v4Schema := v500.SourceCloudflareAPITokenSchema()
-
-	v5SchemaVersion1 := ResourceSchema(ctx)
-	v5SchemaVersion1.Version = 1
-
 	v500Schema := v501.SourceSchemaV500()
+
+	// v5.16-v5.18 stored state at schema_version=1 with the same Set-based schema
+	// as v500. We must NOT use the current ResourceSchema (which is List-based at v501)
+	// because the framework would fail to decode Set-encoded state with a List schema.
+	v1Schema := v501.SourceSchemaV500()
+	v1Schema.Version = 1
 
 	return map[int64]resource.StateUpgrader{
 		// Handle state from v4 SDKv2 provider (schema_version=0)
@@ -48,10 +52,11 @@ func (r *APITokenResource) UpgradeState(ctx context.Context) map[int64]resource.
 			PriorSchema:   &v4Schema,
 			StateUpgrader: v500.UpgradeFromV4,
 		},
-		// Handle state from v5 Plugin Framework provider (version=1)
+		// Handle state from v5.16-v5.18 (schema_version=1, Set-based)
+		// Same format as v500 — deserialize Sets, sort canonically, write as Lists
 		1: {
-			PriorSchema:   &v5SchemaVersion1,
-			StateUpgrader: v500.UpgradeFromV1,
+			PriorSchema:   &v1Schema,
+			StateUpgrader: v501.UpgradeFromV500,
 		},
 		// Handle state from v500 (Set-based) → v501 (List-based with FastSetType)
 		500: {
